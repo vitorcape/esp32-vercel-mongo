@@ -27,7 +27,7 @@ export default function HumidityChart({
     const json: Reading[] = await res.json();
     const ordered = json
       .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
-      .map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString() }));
+      .map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString("pt-BR", {timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) }));
     setData(ordered);
   }, [deviceId]);
 

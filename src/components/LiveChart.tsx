@@ -29,7 +29,7 @@ export default function LiveChart({
     // ordenar do mais antigo para o mais recente (e formatar eixo X)
     const ordered = json.reverse().map((r) => ({
       ...r,
-      ts: new Date(r.ts).toLocaleTimeString(),
+      ts: new Date(r.ts).toLocaleTimeString("pt-BR", {timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
     }));
     setData(ordered);
   }
