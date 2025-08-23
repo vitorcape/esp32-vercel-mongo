@@ -56,7 +56,7 @@ export default async function Home() {
             </div>
             <div className="col-12 col-lg-4">
               <div className="display-6">
-                {last ? new Date(last.ts).toLocaleString() : "--"}
+                {last ? new Date(last.ts).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "--"}
               </div>
               <div className="text-muted">Última atualização</div>
             </div>
@@ -102,7 +102,7 @@ export default async function Home() {
               <tbody>
                 {readings.map((r, i) => (
                   <tr key={r._id ?? i}>
-                    <td>{new Date(r.ts).toLocaleString()}</td>
+                    <td>{new Date(r.ts).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}</td>
                     <td>{r.deviceId}</td>
                     <td>{r.temperature.toFixed(1)}</td>
                     <td>{r.humidity.toFixed(0)}</td>
