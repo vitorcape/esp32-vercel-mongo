@@ -2,34 +2,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 
-// Garanta runtime Node.js (necessário pro driver do Mongo)
 export const runtime = "nodejs";
+
+type IngestBody = {
+  deviceId?: string;
+  temperature: number;
+  humidity: number;
+  ts?: string | number | Date;
+};
 
 export async function POST(req: NextRequest) {
   const apiKey = req.headers.get("x-api-key");
   if (apiKey !== process.env.DEVICE_API_KEY) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // ESP32 deve enviar esse header x-api-key com o mesmo valor da sua .env
   }
 
-  let data: any;
-  try {
-    data = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+  const body = (await req.json()) as IngestBody;
 
-  const { deviceId, temperature, humidity, ts } = data;
-
-  if (typeof temperature !== "number" || typeof humidity !== "number") {
+  if (typeof body.temperature !== "number" || typeof body.humidity !== "number") {
     return NextResponse.json({ error: "temperature/humidity devem ser números" }, { status: 422 });
   }
 
   const doc = {
-    deviceId: deviceId || "esp32-001",
-    temperature,
-    humidity,
-    ts: ts ? new Date(ts) : new Date(),
+    deviceId: body.deviceId ?? "esp32-001",
+    temperature: body.temperature,
+    humidity: body.humidity,
+    ts: body.ts ? new Date(body.ts) : new Date(),
   };
 
   const db = await getDb();
