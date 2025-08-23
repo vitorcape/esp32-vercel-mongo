@@ -1,28 +1,27 @@
-// src/components/NowBadge.tsx
 import { getDb } from "@/lib/mongodb";
 import { getSunInfo } from "@/lib/sun";
 
-type Reading = {
-  temperature: number;
-  ts: Date;
-};
-
 const TZ = "America/Sao_Paulo";
 
-export default async function NowBadge() {
-  // última leitura
-  const db = await getDb();
-  const [last] = await db
-    .collection<Reading>("readings")
-    .find({})
-    .sort({ ts: -1 })
-    .limit(1)
-    .toArray();
+function parseHM(isoLocal: string) {
+  const [h, m] = isoLocal.slice(11, 16).split(":").map(Number);
+  return { h, m };
+}
+function toMinutes(h: number, m: number) {
+  return h * 60 + m;
+}
 
-  // dia/noite (Catanduva/SP)
+export default async function NowBadge() {
+  const db = await getDb();
+  const [last] = await db.collection<{ temperature: number; ts: Date }>("readings")
+    .find({}).sort({ ts: -1 }).limit(1).toArray();
+
   const sun = await getSunInfo();
   const nowSP = new Date(new Date().toLocaleString("en-US", { timeZone: TZ }));
-  const isDay = nowSP >= new Date(sun.sunrise) && nowSP < new Date(sun.sunset);
+  const nowMin = toMinutes(nowSP.getHours(), nowSP.getMinutes());
+  const { h: sh, m: sm } = parseHM(sun.sunrise);
+  const { h: eh, m: em } = parseHM(sun.sunset);
+  const isDay = nowMin >= toMinutes(sh, sm) && nowMin < toMinutes(eh, em);
 
   const icon = isDay ? "fa-sun" : "fa-moon";
   const temp = last ? `${last.temperature.toFixed(1)}°C` : "--°C";
