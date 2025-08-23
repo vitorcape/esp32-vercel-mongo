@@ -6,8 +6,13 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
-type ForecastItem = { iso: string; hourLabel: string; temperature: number | null };
+type ForecastItem = { iso: string; hourLabel: string; temperature: number | null; humidity?: number | null };
 type Reading = { ts: string; temperature: number; deviceId: string };
+
+type ApiForecastResponse = {
+  day: string;
+  items: ForecastItem[];
+};
 
 const TZ = "America/Sao_Paulo";
 
@@ -58,8 +63,8 @@ export default function ForecastCompareChart({
   const fetchAll = useCallback(async () => {
     // 1) previsão (00..23) — já no fuso de SP
     const fResp = await fetch("/api/forecast", { cache: "no-store" });
-    const fJson = await fResp.json();
-    const fItems = (fJson?.items ?? []) as ForecastItem[];
+    const fJson = (await fResp.json()) as ApiForecastResponse;
+    const fItems = Array.isArray(fJson.items) ? fJson.items : [];
 
     // 2) leituras desde 00:00 (pede até 500 pontos)
     const rResp = await fetch(
@@ -68,7 +73,7 @@ export default function ForecastCompareChart({
     );
     const rJson = (await rResp.json()) as Reading[];
 
-    if ((window as any).__debug) {
+    if ((window as unknown as { __debug?: boolean }).__debug) {
       console.log("[compare] sinceISO:", sinceISO);
       console.log("[compare] forecast items (#):", fItems.length, fItems.slice(0, 3));
       console.log("[compare] readings (#):", rJson.length, rJson.slice(0, 3));
@@ -89,24 +94,27 @@ export default function ForecastCompareChart({
     const forecastByHour = new Array<number | null>(24).fill(null);
     forecast.forEach((it) => {
       // Open‑Meteo retorna "YYYY-MM-DDTHH:00" já local → HH direto
-      const hh = Number(it.iso.slice(11, 13)) % 24;
-      forecastByHour[hh] = typeof it.temperature === "number" ? it.temperature : null;
+      const hhStr = it.iso.slice(11, 13);
+      const hh = Number(hhStr);
+      if (Number.isFinite(hh)) {
+        forecastByHour[hh % 24] = typeof it.temperature === "number" ? it.temperature : null;
+      }
     });
 
     const measuredByHour = new Array<number | null>(24).fill(null);
     readings.forEach((r) => {
       const idx = roundedHourIndexSP(r.ts);
-      measuredByHour[idx] = r.temperature; // guarda o último da hora
+      measuredByHour[idx] = r.temperature; // guarda o último valor da hora
     });
 
-    if ((window as any).__debug) {
+    if ((window as unknown as { __debug?: boolean }).__debug) {
       const filledMeasured = measuredByHour
         .map((v, i) => (v == null ? null : { h: i, v }))
         .filter(Boolean);
       console.log("[compare] measuredByHour filled:", filledMeasured);
     }
 
-    const rows = [];
+    const rows: Array<{ hour: string; forecastTemp: number | null; measuredTemp: number | null }> = [];
     for (let h = 0; h < 24; h++) {
       rows.push({
         hour: hourLabel(h),

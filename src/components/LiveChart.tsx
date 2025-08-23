@@ -1,6 +1,7 @@
+// src/components/LiveChart.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
@@ -9,7 +10,7 @@ type Reading = {
   deviceId: string;
   temperature: number;
   humidity: number;
-  ts: string; // vem como string no JSON
+  ts: string; // ISO string
 };
 
 export default function LiveChart({
@@ -23,22 +24,25 @@ export default function LiveChart({
 }) {
   const [data, setData] = useState<Reading[]>([]);
 
-  async function fetchData() {
-    const res = await fetch(`/api/readings?deviceId=${deviceId}&limit=${points}`);
+  const fetchData = useCallback(async () => {
+    const res = await fetch(`/api/readings?deviceId=${encodeURIComponent(deviceId)}&limit=${points}`, { cache: "no-store" });
     const json: Reading[] = await res.json();
-    // ordenar do mais antigo para o mais recente (e formatar eixo X)
     const ordered = json.reverse().map((r) => ({
       ...r,
-      ts: new Date(r.ts).toLocaleTimeString("pt-BR", {timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }),
+      ts: new Date(r.ts).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     }));
     setData(ordered);
-  }
+  }, [deviceId, points]);
 
   useEffect(() => {
-    fetchData(); // primeira carga
+    fetchData();
     const id = setInterval(fetchData, intervalMs);
     return () => clearInterval(id);
-  }, [deviceId, intervalMs, points]);
+  }, [fetchData, intervalMs]);
 
   return (
     <div style={{ width: "100%", height: 360 }}>
@@ -46,8 +50,8 @@ export default function LiveChart({
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="ts" />
-          <YAxis yAxisId="left" domain={["auto", "auto"]} />
-          <YAxis yAxisId="right" orientation="right" domain={["auto", "auto"]} />
+          <YAxis yAxisId="left" domain={([min, max]) => [ (min as number) - 2, (max as number) + 2 ]} />
+          <YAxis yAxisId="right" orientation="right" domain={([min, max]) => [ (min as number) - 2, (max as number) + 2 ]} />
           <Tooltip />
           <Legend />
           <Line yAxisId="left" type="monotone" dataKey="temperature" name="°C" dot={false} />
