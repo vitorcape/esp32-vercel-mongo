@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/mongodb";
 import TempChart from "@/components/TempChart";
 import HumidityChart from "@/components/HumidityChart";
+import ForecastCompareChart from "@/components/ForecastCompareChart";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +83,15 @@ export default async function Home() {
               <HumidityChart deviceId="esp32-lab" intervalMs={15000} />
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card shadow-sm h-100 mb-4">
+        <div className="card-header bg-warning">
+          Comparativo (Hoje) — Previsão × Medido — Catanduva, SP
+        </div>
+        <div className="card-body">
+          <ForecastCompareChart deviceId="esp32-lab" refreshMs={60000} />
         </div>
       </div>
 
