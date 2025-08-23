@@ -1,35 +1,45 @@
+// src/components/HumidityChart.tsx
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip
 } from "recharts";
+import ChartTooltip from "./ChartTooltip";
 
 type Reading = {
+  deviceId: string;
   temperature: number;
   humidity: number;
-  ts: string;
-  deviceId: string;
+  ts: string; // ISO
 };
 
 export default function HumidityChart({
   deviceId = "esp32-lab",
   intervalMs = 15000,
-}: {
-  deviceId?: string;
-  intervalMs?: number;
-}) {
+}: { deviceId?: string; intervalMs?: number }) {
   const [data, setData] = useState<Reading[]>([]);
 
   const fetchData = useCallback(async () => {
-    const sinceISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24h
-    const res = await fetch(`/api/readings?deviceId=${encodeURIComponent(deviceId)}&since=${sinceISO}`, { cache: "no-store" });
-    const json: Reading[] = await res.json();
-    const ordered = json
-      .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
-      .map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString("pt-BR", {timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) }));
-    setData(ordered);
-  }, [deviceId]);
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  const sinceISO = new Date(Date.now() - TWO_HOURS).toISOString();
+  const res = await fetch(
+    `/api/readings?deviceId=${encodeURIComponent(deviceId)}&since=${sinceISO}&limit=200`,
+    { cache: "no-store" }
+  );
+  const json: Reading[] = await res.json();
+  const ordered = json
+    .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+    .map((r) => ({
+      ...r,
+      ts: new Date(r.ts).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    }));
+  setData(ordered);
+}, [deviceId]);
 
   useEffect(() => {
     fetchData();
@@ -38,16 +48,37 @@ export default function HumidityChart({
   }, [fetchData, intervalMs]);
 
   return (
-    <div style={{ width: "100%", height: 320 }}>
+    <div style={{ width: "100%", height: 340 }}>
       <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="ts" />
-          <YAxis domain={([min, max]) => [min - 1, max + 1]} label={{ value: "%", angle: -90, position: "insideLeft" }} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="humidity" name="Umidade (%)" dot={false} />
-        </LineChart>
+        <AreaChart data={data} margin={{ top: 12, right: 12, bottom: 8, left: 12 }}>
+          <defs>
+            <linearGradient id="humFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#BDEDFC" stopOpacity={0.95} />
+              <stop offset="100%" stopColor="#BDEDFC" stopOpacity={0.1} />
+            </linearGradient>
+          </defs>
+
+          <CartesianGrid strokeDasharray="4 6" />
+          <XAxis dataKey="ts" interval="preserveStartEnd" tickMargin={8} />
+          <YAxis
+            domain={([min, max]) => [ (min as number) - 2, (max as number) + 2 ]}
+            tickMargin={8}
+            width={28}
+            label={{ value: "%", angle: -90, position: "insideLeft" }}
+          />
+          <Tooltip content={<ChartTooltip unit="%" />} />
+          <Area
+            type="monotone"
+            dataKey="humidity"
+            name="Umidade (%)"
+            stroke="#0b7fab"
+            strokeWidth={3}
+            fill="url(#humFill)"
+            dot={{ r: 3, stroke: "#0b7fab", strokeWidth: 2 }}
+            activeDot={{ r: 5 }}
+            animationDuration={500}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

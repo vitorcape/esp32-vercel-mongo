@@ -107,7 +107,10 @@ export default function ForecastCompareChart({
       measuredByHour[idx] = r.temperature; // guarda o último valor da hora
     });
 
-    if ((window as unknown as { __debug?: boolean }).__debug) {
+    const isDebug =
+      typeof window !== "undefined" && (window as unknown as { __debug?: boolean }).__debug === true;
+
+    if (isDebug) {
       const filledMeasured = measuredByHour
         .map((v, i) => (v == null ? null : { h: i, v }))
         .filter(Boolean);

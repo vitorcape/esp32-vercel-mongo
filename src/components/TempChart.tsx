@@ -1,35 +1,45 @@
+// src/components/TempChart.tsx
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip
 } from "recharts";
+import ChartTooltip from "./ChartTooltip";
 
 type Reading = {
+  deviceId: string;
   temperature: number;
   humidity: number;
-  ts: string;      // ISO string vinda da API
-  deviceId: string;
+  ts: string; // ISO
 };
 
 export default function TempChart({
   deviceId = "esp32-lab",
-  intervalMs = 15000,   // frequência de atualização da UI (não do ESP32)
-}: {
-  deviceId?: string;
-  intervalMs?: number;
-}) {
+  intervalMs = 15000,
+}: { deviceId?: string; intervalMs?: number }) {
   const [data, setData] = useState<Reading[]>([]);
 
   const fetchData = useCallback(async () => {
-    const sinceISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24h
-    const res = await fetch(`/api/readings?deviceId=${encodeURIComponent(deviceId)}&since=${sinceISO}`, { cache: "no-store" });
-    const json: Reading[] = await res.json();
-    const ordered = json
-      .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
-      .map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString("pt-BR", {timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) }));
-    setData(ordered);
-  }, [deviceId]);
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+  const sinceISO = new Date(Date.now() - TWO_HOURS).toISOString();
+  const res = await fetch(
+    `/api/readings?deviceId=${encodeURIComponent(deviceId)}&since=${sinceISO}&limit=200`,
+    { cache: "no-store" }
+  );
+  const json: Reading[] = await res.json();
+  const ordered = json
+    .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+    .map((r) => ({
+      ...r,
+      ts: new Date(r.ts).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit", // sem segundos
+      }),
+    }));
+  setData(ordered);
+}, [deviceId]);
 
   useEffect(() => {
     fetchData();
@@ -38,16 +48,38 @@ export default function TempChart({
   }, [fetchData, intervalMs]);
 
   return (
-    <div style={{ width: "100%", height: 320 }}>
+    <div style={{ width: "100%", height: 340 }}>
       <ResponsiveContainer>
-        <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="ts" />
-          <YAxis domain={([min, max]) => [min - 0.5, max + 0.5]} label={{ value: "°C", angle: -90, position: "insideLeft" }} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="temperature" name="Temperatura (°C)" dot={false} />
-        </LineChart>
+        <AreaChart data={data} margin={{ top: 12, right: 12, bottom: 8, left: 12 }}>
+          {/* Gradiente suave (azul claro) */}
+          <defs>
+            <linearGradient id="tempFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#CDE3FF" stopOpacity={0.95} />
+              <stop offset="100%" stopColor="#CDE3FF" stopOpacity={0.1} />
+            </linearGradient>
+          </defs>
+
+          <CartesianGrid strokeDasharray="4 6" />
+          <XAxis dataKey="ts" interval="preserveStartEnd" tickMargin={8} />
+          <YAxis
+            domain={([min, max]) => [ (min as number) - 2, (max as number) + 2 ]}
+            tickMargin={8}
+            width={28}
+            label={{ value: "°C", angle: -90, position: "insideLeft" }}
+          />
+          <Tooltip content={<ChartTooltip unit="°C" />} />
+          <Area
+            type="monotone"
+            dataKey="temperature"
+            name="Temperatura (°C)"
+            stroke="#1b4fe0"
+            strokeWidth={3}
+            fill="url(#tempFill)"
+            dot={{ r: 3, stroke: "#1b4fe0", strokeWidth: 2 }}
+            activeDot={{ r: 5 }}
+            animationDuration={500}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

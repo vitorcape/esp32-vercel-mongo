@@ -14,24 +14,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-sky text-white">
+      <body className="bg-sky text-white d-flex flex-column min-vh-100">
+        {/* NAV */}
         <nav className="navbar navbar-expand-lg navbar-translucent border-0">
           <div className="container d-flex align-items-center">
-            {/* bloco com título + badge à direita do título */}
             <div className="d-flex align-items-center gap-3">
               <Link className="navbar-brand text-white fw-semibold d-flex align-items-center gap-2 m-0" href="/">
                 <i className="fa-solid fa-house-chimney"></i>
                 <span>Casa do Vitor Capelli</span>
               </Link>
-              {/* sol/lua + temperatura atual */}
-              {/* Server Component que busca Mongo e sunrise/sunset */}
-              {/* Mantém responsivo e discreto */}
               <NowBadge />
             </div>
-
-            {/* ações do lado direito */}
             <div className="ms-auto d-flex align-items-center gap-3">
-              <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/charts">
+              <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/graficos">
                 <i className="fa-solid fa-chart-line me-2"></i>Gráficos
               </Link>
               <a
@@ -47,7 +42,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </nav>
 
-        <main className="content-wrapper">{children}</main>
+        {/* CONTEÚDO */}
+        <main className="content-wrapper flex-grow-1">{children}</main>
+
+        {/* FOOTER */}
+        <footer className="footer-glass mt-auto py-3">
+          <div className="container text-center small">
+            <div className="mb-1">
+              <i className="fa-solid fa-microchip me-2"></i>
+              Projeto IoT com ESP32 & DHT22 • Dados em tempo real
+            </div>
+            <div className="text-white-50">
+              © {new Date().getFullYear()} Casa do Vitor Capelli • Desenvolvido com{" "}
+              <i className="fa-solid fa-heart text-danger"></i>
+            </div>
+          </div>
+        </footer>
       </body>
     </html>
   );
