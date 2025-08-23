@@ -43,7 +43,7 @@ export default function HumidityChart({
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="ts" />
-          <YAxis domain={["auto", "auto"]} label={{ value: "%", angle: -90, position: "insideLeft" }} />
+          <YAxis domain={([min, max]) => [min - 1, max + 1]} label={{ value: "%", angle: -90, position: "insideLeft" }} />
           <Tooltip />
           <Legend />
           <Line type="monotone" dataKey="humidity" name="Umidade (%)" dot={false} />

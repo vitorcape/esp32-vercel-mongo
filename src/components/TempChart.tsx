@@ -43,7 +43,7 @@ export default function TempChart({
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="ts" />
-          <YAxis domain={["auto", "auto"]} label={{ value: "°C", angle: -90, position: "insideLeft" }} />
+          <YAxis domain={([min, max]) => [min - 0.5, max + 0.5]} label={{ value: "°C", angle: -90, position: "insideLeft" }} />
           <Tooltip />
           <Legend />
           <Line type="monotone" dataKey="temperature" name="Temperatura (°C)" dot={false} />
