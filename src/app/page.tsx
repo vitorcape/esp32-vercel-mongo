@@ -56,6 +56,20 @@ export default async function Home() {
   const TZ = "America/Sao_Paulo";
 
   // helper: "YYYY-MM-DDTHH:MM" -> {h, m}
+
+  function formatTime(input?: Date | string) {
+    if (!input) return "--:--";
+    if (typeof input === "string") {
+      // já vem como "HH:MM" do Open‑Meteo (processado por nós)
+      return input;
+    }
+    return new Date(input).toLocaleTimeString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   function parseHM(isoLocal: string) {
     const [h, m] = isoLocal.slice(11, 16).split(":").map(Number);
     return { h, m };
@@ -77,9 +91,9 @@ export default async function Home() {
   // dia/noite
   const isDay = nowMin >= sunriseMin && nowMin < sunsetMin;
 
-  // rótulos para exibir
-  const sunriseLabel = sun.sunrise.slice(11, 16); // "HH:MM"
-  const sunsetLabel = sun.sunset.slice(11, 16);  // "HH:MM"
+  // rótulos para exibir (string "HH:MM")
+  const sunriseLabel = sun.sunrise.slice(11, 16);
+  const sunsetLabel = sun.sunset.slice(11, 16);
 
   const fmt = (d?: Date | string) =>
     d
@@ -114,13 +128,13 @@ export default async function Home() {
         <div className="col-12 col-md-6 col-lg-3">
           <div className="card-glass p-3 h-100">
             <i className="fa-solid fa-sun me-2"></i>Nascer do sol
-            <div className="fs-3 fw-bold">{fmt(sunriseLabel)}</div>
+            <div className="fs-3 fw-bold">{formatTime(sunriseLabel)}</div>
           </div>
         </div>
         <div className="col-12 col-md-6 col-lg-3">
           <div className="card-glass p-3 h-100">
             <i className="fa-solid fa-moon me-2"></i>Pôr do sol
-            <div className="fs-3 fw-bold">{fmt(sunsetLabel)}</div>
+            <div className="fs-3 fw-bold">{formatTime(sunsetLabel)}</div>
           </div>
         </div>
       </section>
