@@ -2,26 +2,27 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-const uri = process.env.MONGODB_URI!;
-if (!uri) throw new Error("Defina MONGODB_URI nas variáveis de ambiente.");
-
-const client = new MongoClient(uri, {
-  serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-});
-
-// cache global p/ dev/serverless
-const clientPromise: Promise<MongoClient> =
-  global._mongoClientPromise ?? client.connect();
-
-if (!global._mongoClientPromise) {
-  global._mongoClientPromise = clientPromise;
+function getClientPromise(): Promise<MongoClient> {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      "Defina MONGODB_URI nas variáveis de ambiente (Vercel: Settings → Environment Variables)."
+    );
+  }
+  if (!global._mongoClientPromise) {
+    const client = new MongoClient(uri, {
+      serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+    });
+    global._mongoClientPromise = client.connect();
+  }
+  return global._mongoClientPromise;
 }
 
 export async function getDb() {
-  const c = await clientPromise;
-  return c.db(process.env.MONGODB_DB || "esp32");
+  const client = await getClientPromise();
+  const dbName = process.env.MONGODB_DB || "esp32";
+  return client.db(dbName);
 }

@@ -1,18 +1,9 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// src/app/layout.tsx
 import "bootstrap/dist/css/bootstrap.min.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Casa do Vitor Capelli",
@@ -22,15 +13,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-br">
-      {/* bg-white -> fundo branco; text-dark -> texto escuro */}
       <body className="bg-white text-dark">
-        {/* Navbar Bootstrap + FontAwesome */}
         <nav className="navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
           <div className="container">
-            <a className="navbar-brand d-flex align-items-center gap-2" href="/">
+            <Link className="navbar-brand d-flex align-items-center gap-2" href="/">
               <i className="fa-solid fa-house-chimney"></i>
               <span>Casa do Vitor Capelli</span>
-            </a>
+            </Link>
             <button
               className="navbar-toggler"
               type="button"
@@ -45,12 +34,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="collapse navbar-collapse" id="navMain">
               <ul className="navbar-nav ms-auto">
                 <li className="nav-item">
-                  <a className="nav-link" href="https://vercel.com/dashboard" target="_blank">
+                  <a className="nav-link" href="https://vercel.com/dashboard" target="_blank" rel="noreferrer">
                     <i className="fa-brands fa-vercel me-1"></i> Vercel
                   </a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="https://cloud.mongodb.com" target="_blank">
+                  <a className="nav-link" href="https://cloud.mongodb.com" target="_blank" rel="noreferrer">
                     <i className="fa-solid fa-database me-1"></i> Atlas
                   </a>
                 </li>
@@ -58,8 +47,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-
-        {/* Conteúdo das páginas */}
         {children}
       </body>
     </html>

@@ -1,7 +1,7 @@
 // src/components/HumidityChart.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
@@ -24,21 +24,18 @@ export default function HumidityChart({
 }) {
   const [data, setData] = useState<Reading[]>([]);
 
-  async function fetchData() {
-    const res = await fetch(`/api/readings?deviceId=${deviceId}&limit=${points}`);
+  const fetchData = useCallback(async () => {
+    const res = await fetch(`/api/readings?deviceId=${deviceId}&limit=${points}`, { cache: "no-store" });
     const json: Reading[] = await res.json();
-    const ordered = json.reverse().map((r) => ({
-      ...r,
-      ts: new Date(r.ts).toLocaleTimeString(),
-    }));
+    const ordered = json.reverse().map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString() }));
     setData(ordered);
-  }
+  }, [deviceId, points]);
 
   useEffect(() => {
     fetchData();
     const id = setInterval(fetchData, intervalMs);
     return () => clearInterval(id);
-  }, [deviceId, intervalMs, points]);
+  }, [fetchData, intervalMs]);
 
   return (
     <div style={{ width: "100%", height: 320 }}>
