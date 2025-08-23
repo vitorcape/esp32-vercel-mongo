@@ -1,4 +1,3 @@
-// src/components/HumidityChart.tsx
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -16,20 +15,21 @@ type Reading = {
 export default function HumidityChart({
   deviceId = "esp32-lab",
   intervalMs = 15000,
-  points = 60,
 }: {
   deviceId?: string;
   intervalMs?: number;
-  points?: number;
 }) {
   const [data, setData] = useState<Reading[]>([]);
 
   const fetchData = useCallback(async () => {
-    const res = await fetch(`/api/readings?deviceId=${deviceId}&limit=${points}`, { cache: "no-store" });
+    const sinceISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // 24h
+    const res = await fetch(`/api/readings?deviceId=${encodeURIComponent(deviceId)}&since=${sinceISO}`, { cache: "no-store" });
     const json: Reading[] = await res.json();
-    const ordered = json.reverse().map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString() }));
+    const ordered = json
+      .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+      .map((r) => ({ ...r, ts: new Date(r.ts).toLocaleTimeString() }));
     setData(ordered);
-  }, [deviceId, points]);
+  }, [deviceId]);
 
   useEffect(() => {
     fetchData();
