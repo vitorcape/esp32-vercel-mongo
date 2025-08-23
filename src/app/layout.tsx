@@ -7,47 +7,37 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Casa do Vitor Capelli",
-  description: "Monitoramento ESP32 (DHT22)",
+  description: "Monitoramento residencial — ESP32 + DHT22",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-br">
-      <body className="bg-white text-dark">
-        <nav className="navbar navbar-expand-lg navbar-light bg-light border-bottom sticky-top">
+    <html lang="pt-BR">
+      <body className="bg-sky text-white">
+        <nav className="navbar navbar-expand-lg navbar-translucent border-0">
           <div className="container">
-            <Link className="navbar-brand d-flex align-items-center gap-2" href="/">
+            <Link className="navbar-brand text-white fw-semibold d-flex align-items-center gap-2" href="/">
               <i className="fa-solid fa-house-chimney"></i>
               <span>Casa do Vitor Capelli</span>
             </Link>
-            <button
-              className="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navMain"
-              aria-controls="navMain"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span className="navbar-toggler-icon"></span>
-            </button>
-            <div className="collapse navbar-collapse" id="navMain">
-              <ul className="navbar-nav ms-auto">
-                <li className="nav-item">
-                  <a className="nav-link" href="https://vercel.com/dashboard" target="_blank" rel="noreferrer">
-                    <i className="fa-brands fa-vercel me-1"></i> Vercel
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a className="nav-link" href="https://cloud.mongodb.com" target="_blank" rel="noreferrer">
-                    <i className="fa-solid fa-database me-1"></i> Atlas
-                  </a>
-                </li>
-              </ul>
+            <div className="ms-auto d-flex align-items-center gap-3">
+              {/* botões de navegação futuros */}
+              <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/charts">
+                <i className="fa-solid fa-chart-line me-2"></i>Gráficos
+              </Link>
+              <a
+                className="btn btn-sm btn-outline-light rounded-pill px-3"
+                href="https://cloud.mongodb.com"
+                target="_blank"
+                rel="noreferrer"
+                title="MongoDB Atlas"
+              >
+                <i className="fa-solid fa-database me-2"></i>Atlas
+              </a>
             </div>
           </div>
         </nav>
-        {children}
+        <main className="content-wrapper">{children}</main>
       </body>
     </html>
   );

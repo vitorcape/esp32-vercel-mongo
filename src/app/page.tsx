@@ -1,7 +1,6 @@
+// src/app/page.tsx
 import { getDb } from "@/lib/mongodb";
-import TempChart from "@/components/TempChart";
-import HumidityChart from "@/components/HumidityChart";
-import ForecastCompareChart from "@/components/ForecastCompareChart";
+import { getSunInfo } from "@/lib/sun";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,115 +13,98 @@ type Reading = {
   ts: Date;
 };
 
+function startOfTodaySP(): Date {
+  const tz = "America/Sao_Paulo";
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+  now.setHours(0, 0, 0, 0);
+  return new Date(now.toLocaleString("en-US", { timeZone: tz }));
+}
+
 export default async function Home() {
   const db = await getDb();
 
-  // último registro para mostrar em destaque
-  const latest = await db
+  const [last] = await db
     .collection<Reading>("readings")
     .find({})
     .sort({ ts: -1 })
     .limit(1)
     .toArray();
 
-  const last = latest[0];
-
-  // últimas 10 leituras para a tabela
-  const readings = await db
+  const since = startOfTodaySP();
+  const statsAgg = await db
     .collection<Reading>("readings")
-    .find({})
-    .sort({ ts: -1 })
-    .limit(10)
+    .aggregate([
+      { $match: { ts: { $gte: since } } },
+      {
+        $group: {
+          _id: null,
+          tMin: { $min: "$temperature" },
+          tMax: { $max: "$temperature" },
+          hMin: { $min: "$humidity" },
+          hMax: { $max: "$humidity" },
+          count: { $sum: 1 },
+        },
+      },
+    ])
     .toArray();
 
+  const stats = statsAgg[0] || { tMin: null, tMax: null, hMin: null, hMax: null, count: 0 };
+
+  // sunrise/sunset
+  const sun = await getSunInfo();
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const sunrise = new Date(sun.sunrise);
+  const sunset = new Date(sun.sunset);
+  const isDay = now >= sunrise && now < sunset;
+
+  const fmt = (d?: Date | string) =>
+    d
+      ? new Date(d).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })
+      : "--:--";
+
   return (
-    <main className="container py-4">
-      <h1 className="text-center mb-4">Monitoramento ESP32 (DHT22)</h1>
+    <div className="container py-4">
+      {/* hero */}
+      <section className="hero card-glass mb-4 text-center">
+        <div className="display-1">{isDay ? "☀️" : "🌙"}</div>
+        <div className="display-4 fw-bold">
+          {last ? `${last.temperature.toFixed(1)}°C` : "--°C"} / {last ? `${last.humidity.toFixed(0)}%` : "--%"}
+        </div>
+        <div className="label-muted mt-2">Última atualização: {last ? fmt(last.ts) : "--:--"}</div>
+      </section>
 
-      {/* Destaque grande com a leitura mais recente */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-          <div className="row text-center">
-            <div className="col-12 col-lg-4 mb-3 mb-lg-0">
-              <div className="display-5 fw-bold">
-                {last ? `${last.temperature.toFixed(1)}°C` : "--"}
-              </div>
-              <div className="text-muted">Temperatura</div>
-            </div>
-            <div className="col-12 col-lg-4 mb-3 mb-lg-0">
-              <div className="display-5 fw-bold">
-                {last ? `${last.humidity.toFixed(0)}%` : "--"}
-              </div>
-              <div className="text-muted">Umidade</div>
-            </div>
-            <div className="col-12 col-lg-4">
-              <div className="display-6">
-                {last ? new Date(last.ts).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "--"}
-              </div>
-              <div className="text-muted">Última atualização</div>
-            </div>
+      {/* cartões */}
+      <section className="row g-3">
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card-glass p-3 h-100">
+            <i className="fa-solid fa-temperature-arrow-up me-2"></i>Máxima de hoje
+            <div className="fs-3 fw-bold">{stats.tMax != null ? `${stats.tMax.toFixed(1)}°C` : "—"}</div>
           </div>
         </div>
-      </div>
-
-      {/* grid com dois gráficos separados */}
-      <div className="row g-4 mb-4">
-        <div className="col-12 col-lg-6">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-primary text-white">Temperatura — últimas 24h</div>
-            <div className="card-body">
-              <TempChart deviceId="esp32-lab" intervalMs={15000} />
-            </div>
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card-glass p-3 h-100">
+            <i className="fa-solid fa-temperature-arrow-down me-2"></i>Mínima de hoje
+            <div className="fs-3 fw-bold">{stats.tMin != null ? `${stats.tMin.toFixed(1)}°C` : "—"}</div>
           </div>
         </div>
-
-        <div className="col-12 col-lg-6">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-info text-white">Umidade — últimas 24h</div>
-            <div className="card-body">
-              <HumidityChart deviceId="esp32-lab" intervalMs={15000} />
-            </div>
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card-glass p-3 h-100">
+            <i className="fa-solid fa-sun me-2"></i>Nascer do sol
+            <div className="fs-3 fw-bold">{fmt(sun.sunrise)}</div>
           </div>
         </div>
-      </div>
-
-      <div className="card shadow-sm h-100 mb-4">
-        <div className="card-header bg-warning">
-          Comparativo (Hoje) — Previsão × Medido — Catanduva, SP
-        </div>
-        <div className="card-body">
-          <ForecastCompareChart deviceId="esp32-lab" refreshMs={60000} />
-        </div>
-      </div>
-
-      {/* tabela responsiva com últimas leituras */}
-      <div className="card shadow-sm">
-        <div className="card-header bg-secondary text-white">Últimas Leituras</div>
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-striped mb-0">
-              <thead className="table-dark">
-                <tr>
-                  <th>Data/Hora</th>
-                  <th>Dispositivo</th>
-                  <th>Temperatura (°C)</th>
-                  <th>Umidade (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {readings.map((r, i) => (
-                  <tr key={r._id ?? i}>
-                    <td>{new Date(r.ts).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}</td>
-                    <td>{r.deviceId}</td>
-                    <td>{r.temperature.toFixed(1)}</td>
-                    <td>{r.humidity.toFixed(0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="col-12 col-md-6 col-lg-3">
+          <div className="card-glass p-3 h-100">
+            <i className="fa-solid fa-moon me-2"></i>Pôr do sol
+            <div className="fs-3 fw-bold">{fmt(sun.sunset)}</div>
           </div>
         </div>
-      </div>
-    </main>
+      </section>
+
+      {/* rodapé */}
+      <footer className="mt-5 small text-white-50 text-center">
+        Dados do sensor DHT22 via ESP32 • Fuso: America/Sao_Paulo
+      </footer>
+    </div>
   );
 }
