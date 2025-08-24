@@ -1,3 +1,18 @@
+/* react-day-picker base CSS */
+@import "react-day-picker/dist/style.css";
+
+/* tema: fundo claro dentro do card branco translúcido */
+.rdp {
+  --rdp-accent-color: #2563eb;         /* azul */
+  --rdp-accent-background-color: rgba(37,99,235,.12);
+  --rdp-outline: 2px solid rgba(37,99,235,.35);
+  --rdp-background-color: rgba(255,255,255,0.92);
+  color: #0f2a5b;
+}
+.rdp-button:hover:not([disabled]) { background: rgba(37,99,235,.08); }
+.rdp-day_selected { color: #fff; }
+.rdp-caption_label { font-weight: 700; }
+
 /* Fundo azul estilo app clima */
 .bg-sky {
   /* gradiente suave em tons de azul */

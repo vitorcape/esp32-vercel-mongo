@@ -30,6 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/graficos">
                 <i className="fa-solid fa-chart-line me-2"></i>Gráficos
               </Link>
+              <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/calendario">
+                <i className="fa-solid fa-calendar-days me-2"></i>Calendário
+              </Link>
               <a
                 className="btn btn-sm btn-outline-light rounded-pill px-3"
                 href="https://cloud.mongodb.com"

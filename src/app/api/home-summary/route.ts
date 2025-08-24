@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/mongodb";
 import { getSunInfo } from "@/lib/sun";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const TZ = "America/Sao_Paulo";
 
 function startOfTodaySP(): Date {
@@ -10,7 +13,6 @@ function startOfTodaySP(): Date {
   now.setHours(0, 0, 0, 0);
   return new Date(now.toLocaleString("en-US", { timeZone: TZ }));
 }
-
 function parseHM(isoLocal: string) {
   const [h, m] = isoLocal.slice(11, 16).split(":").map(Number);
   return { h, m };
@@ -20,54 +22,64 @@ function toMinutes(h: number, m: number) {
 }
 
 export async function GET() {
-  const db = await getDb();
+  try {
+    const db = await getDb();
+    const coll = db.collection("readings");
 
-  // último registro
-  const [last] = await db
-    .collection("readings")
-    .find({})
-    .sort({ ts: -1 })
-    .limit(1)
-    .toArray();
+    // ---- último registro (serializado) ----
+    const lastDoc = await coll
+      .find({}, { projection: { _id: 0, deviceId: 1, temperature: 1, humidity: 1, ts: 1 } })
+      .sort({ ts: -1 })
+      .limit(1)
+      .next();
 
-  // stats do dia
-  const since = startOfTodaySP();
-  const statsAgg = await db
-    .collection("readings")
-    .aggregate([
-      { $match: { ts: { $gte: since } } },
-      {
-        $group: {
-          _id: null,
-          tMin: { $min: "$temperature" },
-          tMax: { $max: "$temperature" },
-          hMin: { $min: "$humidity" },
-          hMax: { $max: "$humidity" },
-          count: { $sum: 1 },
+    const last = lastDoc
+      ? {
+          deviceId: String(lastDoc.deviceId),
+          temperature: Number(lastDoc.temperature),
+          humidity: Number(lastDoc.humidity),
+          ts: new Date(lastDoc.ts).toISOString(), // seguro para JSON
+        }
+      : null;
+
+    // ---- stats do dia ----
+    const since = startOfTodaySP();
+    const statsAgg = await coll
+      .aggregate([
+        { $match: { ts: { $gte: since } } },
+        {
+          $group: {
+            _id: null,
+            tMin: { $min: "$temperature" },
+            tMax: { $max: "$temperature" },
+            hMin: { $min: "$humidity" },
+            hMax: { $max: "$humidity" },
+            count: { $sum: 1 },
+          },
         },
-      },
-    ])
-    .toArray();
+      ])
+      .toArray();
 
-  const stats = statsAgg[0] ?? { tMin: null, tMax: null, hMin: null, hMax: null, count: 0 };
+    const stats = statsAgg[0] ?? { tMin: null, tMax: null, hMin: null, hMax: null, count: 0 };
 
-  // sol (strings locais "YYYY-MM-DDTHH:MM")
-  const sun = await getSunInfo();
-  const sunriseLabel = sun.sunrise.slice(11, 16);
-  const sunsetLabel  = sun.sunset.slice(11, 16);
+    // ---- nascer/pôr do sol (strings locais "YYYY-MM-DDTHH:MM") ----
+    const sun = await getSunInfo();
+    const sunriseLabel = sun.sunrise.slice(11, 16);
+    const sunsetLabel = sun.sunset.slice(11, 16);
 
-  const nowSP = new Date(new Date().toLocaleString("en-US", { timeZone: TZ }));
-  const nowMin = toMinutes(nowSP.getHours(), nowSP.getMinutes());
-  const { h: sh, m: sm } = parseHM(sun.sunrise);
-  const { h: eh, m: em } = parseHM(sun.sunset);
-  const isDay = nowMin >= toMinutes(sh, sm) && nowMin < toMinutes(eh, em);
+    // dia/noite
+    const nowSP = new Date(new Date().toLocaleString("en-US", { timeZone: TZ }));
+    const nowMin = toMinutes(nowSP.getHours(), nowSP.getMinutes());
+    const { h: sh, m: sm } = parseHM(sun.sunrise);
+    const { h: eh, m: em } = parseHM(sun.sunset);
+    const isDay = nowMin >= toMinutes(sh, sm) && nowMin < toMinutes(eh, em);
 
-  return NextResponse.json({
-    last,                   // {_id, deviceId, temperature, humidity, ts}
-    stats,                  // {tMin,tMax,hMin,hMax,count}
-    sunriseLabel,
-    sunsetLabel,
-    isDay,
-    nowISO: nowSP.toISOString(),
-  }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json(
+      { last, stats, sunriseLabel, sunsetLabel, isDay, nowISO: nowSP.toISOString() },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (err) {
+    console.error("[home-summary] error:", err);
+    return NextResponse.json({ error: "home-summary failed" }, { status: 500 });
+  }
 }
