@@ -4,7 +4,6 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
-import NowBadge from "@/components/NowBadge";
 import NowBadgeClient from "@/components/NowBadgeClient";
 
 export const metadata: Metadata = {
