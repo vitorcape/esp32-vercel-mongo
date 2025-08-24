@@ -5,6 +5,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import NowBadge from "@/components/NowBadge";
+import NowBadgeClient from "@/components/NowBadgeClient";
 
 export const metadata: Metadata = {
   title: "Casa do Vitor Capelli",
@@ -23,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <i className="fa-solid fa-house-chimney"></i>
                 <span>Casa do Vitor Capelli</span>
               </Link>
-              <NowBadge />
+              <NowBadgeClient refreshMs={30000} />
             </div>
             <div className="ms-auto d-flex align-items-center gap-3">
               <Link className="btn btn-sm btn-outline-light rounded-pill px-3" href="/graficos">
