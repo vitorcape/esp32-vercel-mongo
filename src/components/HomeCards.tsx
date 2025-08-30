@@ -79,6 +79,17 @@ export default function HomeCards({ refreshMs = 15000 }: { refreshMs?: number })
             <div className="fs-3 fw-bold">{formatTime(data?.sunsetLabel)}</div>
           </div>
         </div>
+        {/* link para página Sobre */}
+<div className="text-center mt-4">
+  <a
+    href="/sobre"
+    className="btn btn-outline-light"
+    style={{ borderRadius: "20px", fontWeight: "500" }}
+  >
+    <i className="fa-solid fa-circle-info me-2"></i>
+    Saiba mais sobre este projeto
+  </a>
+</div>
       </section>
     </>
   );
